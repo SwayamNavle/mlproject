@@ -1,12 +1,11 @@
 import os
 import sys
 import pandas as pd
-import logging
 from sklearn.model_selection import train_test_split
 
-# Make sure these are properly defined in your project
 from src.exception import CustomException
 from src.logger import logging
+from src.components.data_transformation import DataTransformation
 
 
 class DataIngestionConfig:
@@ -21,48 +20,33 @@ class DataIngestion:
         self.ingestion_config = DataIngestionConfig()
 
     def initiate_data_ingestion(self):
-        logging.info("Entered Data ingestion method or component")
+        """
+        Reads raw dataset, splits into train/test, and saves them
+        """
+        logging.info("Entered Data Ingestion")
 
         try:
-            # ✅ Correct file path
             df = pd.read_csv("notebook/data/stud.csv")
-            logging.info("Dataset read successfully")
 
-            # ✅ FIXED syntax (missing comma earlier)
-            os.makedirs(
-                os.path.dirname(self.ingestion_config.train_data_path),
-                exist_ok=True
-            )
+            logging.info("Dataset loaded successfully")
 
-            # ✅ Save raw data
-            df.to_csv(
-                self.ingestion_config.raw_data_path,
-                index=False,
-                header=True
-            )
+            os.makedirs("artifacts", exist_ok=True)
 
-            logging.info("Train-Test Split initiated")
+            # Save raw data
+            df.to_csv(self.ingestion_config.raw_data_path, index=False)
+            logging.info("Raw data saved")
 
+            # Train-test split
             train_set, test_set = train_test_split(
                 df,
                 test_size=0.2,
                 random_state=42
             )
 
-            # ✅ FIXED: Save both train & test correctly
-            train_set.to_csv(
-                self.ingestion_config.train_data_path,
-                index=False,
-                header=True
-            )
+            train_set.to_csv(self.ingestion_config.train_data_path, index=False)
+            test_set.to_csv(self.ingestion_config.test_data_path, index=False)
 
-            test_set.to_csv(
-                self.ingestion_config.test_data_path,
-                index=False,
-                header=True
-            )
-
-            logging.info("Data ingestion completed successfully")
+            logging.info("Train-test split completed")
 
             return (
                 self.ingestion_config.train_data_path,
@@ -70,11 +54,24 @@ class DataIngestion:
             )
 
         except Exception as e:
-            logging.error(f"Error occurred: {e}")
             raise CustomException(e, sys)
 
 
-# ✅ Ensure execution happens
 if __name__ == "__main__":
+    logging.info("Pipeline started")
+
     obj = DataIngestion()
-    obj.initiate_data_ingestion()
+
+    train_data, test_data = obj.initiate_data_ingestion()
+
+    logging.info("Starting data transformation")
+
+    data_transformation = DataTransformation()
+
+    train_arr, test_arr, _ = data_transformation.initiate_data_transformation(
+        train_data, test_data
+    )
+
+    logging.info("Pipeline completed successfully")
+
+    print("✅ Full pipeline executed successfully")
